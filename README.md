@@ -207,4 +207,14 @@ This project is open source and available under the [MIT License](LICENSE).
 
 ⭐ *Star this repo if it helped you plan your week better!* ⭐
 
+---
+
 </div>
+ 
+  <a href="https://www.linkedin.com/in/angad-singh-maan/" style="text-decoration:none;border:1;">
+    <img src="https://skillicons.dev/icons?i=linkedin" alt="LinkedIn">
+  </a>
+
+---
+
+### ***Author - Angad Singh Maan***
