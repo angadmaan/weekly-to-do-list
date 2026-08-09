@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Weekly Targets To‑Do</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <div class="title">
+      <h1>Weekly Targets To‑Do (Links + Attachments)</h1>
+      <p>
+        Add tasks to specific weekdays. For each task you can include a link, notes, and attach files (saved in-memory for this session).
+      </p>
+    </div>
+    <div class="topActions">
+      <div class="pill" title="Progress across the whole week">
+        Week progress: <strong id="weekProgress">0%</strong>
+      </div>
+      <button class="btn primary" id="btnClearDone" type="button">Clear completed</button>
+      <button class="btn danger" id="btnResetWeek" type="button">Reset week</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <!-- Left: Add task -->
+    <section class="card">
+      <div class="hd">
+        <div>
+          <h2>Create a task</h2>
+          <div class="sub">Choose a day, set a title, then optionally add links, notes, and attachments.</div>
+        </div>
+      </div>
+      <div class="bd">
+        <form id="taskForm">
+          <div class="formGrid">
+            <div>
+              <label for="taskTitle">Task title (weekly target)</label>
+              <input id="taskTitle" type="text" placeholder="e.g., Finish module 3 practice set" required />
+            </div>
+
+            <div>
+              <label for="taskDay">Day of week</label>
+              <select id="taskDay" required>
+                <!-- populated by JS -->
+              </select>
+            </div>
+
+            <div>
+              <label for="taskDue">Optional due date</label>
+              <input id="taskDue" type="date" />
+            </div>
+
+            <div>
+              <label for="taskNotes">Notes / steps</label>
+              <textarea id="taskNotes" placeholder="Break it down into steps..."></textarea>
+            </div>
+
+            <div>
+              <label for="taskLink">Upload a link (optional)</label>
+              <input id="taskLink" type="url" placeholder="https://..." />
+            </div>
+
+            <div>
+              <label for="taskFiles">Attachments (optional)</label>
+              <input id="taskFiles" type="file" multiple />
+            </div>
+          </div>
+
+          <div class="formActions">
+            <button class="btn primary" type="submit">Add to day</button>
+            <button class="btn" type="button" id="btnFillSample">Sample</button>
+            <span class="hint" style="margin:0; align-self:center;">
+              Tip: Use the checkboxes in the day columns to mark tasks complete.
+            </span>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- Right: Week view -->
+    <section class="card">
+      <div class="hd">
+        <div>
+          <h2>This week board</h2>
+          <div class="sub">
+            Week starts Monday. Your board is generated from your local time.
+            <span class="kbd" title="Keyboard hint">Enter</span> adds a task when the form is focused.
+          </div>
+        </div>
+        <div class="pill" style="margin-left:auto;" title="Total tasks in the week">
+          Tasks: <strong id="taskCount">0</strong>
+        </div>
+      </div>
+
+      <div class="daysGrid" id="daysGrid">
+        <!-- populated by JS -->
+      </div>
+      <div class="empty" id="saveNote">
+        Attachments are stored in-memory only (refresh clears them).
+      </div>
+    </section>
+  </div>
+
+  <!-- Edit / details modal -->
+  <div class="modalBackdrop" id="modalBackdrop" data-open="false">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="mHd">
+        <div>
+          <h3 id="modalTitle">Task details</h3>
+          <p id="modalSubtitle">Edit task info or manage attachments.</p>
+        </div>
+        <button class="btn" type="button" id="modalClose">Close</button>
+      </div>
+
+      <div class="mBd">
+        <div>
+          <label for="mTitle">Title</label>
+          <input id="mTitle" type="text" />
+
+          <label for="mDay">Day</label>
+          <select id="mDay"></select>
+
+          <label for="mDue">Due date (optional)</label>
+          <input id="mDue" type="date" />
+
+          <label for="mNotes">Notes</label>
+          <textarea id="mNotes"></textarea>
+        </div>
+
+        <div>
+          <label for="mLink">Link (optional)</label>
+          <input id="mLink" type="url" />
+
+          <div style="margin-top:12px; color:var(--muted); font-size:12px;">
+            Attached files (this session):
+          </div>
+          <div class="files" id="mFiles" style="margin-top:10px;"></div>
+
+          <div style="margin-top:14px;">
+            <label for="mNewFiles">Add more files (optional)</label>
+            <input id="mNewFiles" type="file" multiple />
+            <div class="hint">New attachments replace none; they'll be appended.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mFt">
+        <button class="btn danger" type="button" id="modalDelete">Delete task</button>
+        <button class="btn primary" type="button" id="modalSave">Save changes</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
