@@ -42,15 +42,17 @@ Most to-do apps throw everything into one big list. This one doesn't. Here, your
 | Feature | Description |
 |---|---|
 | 📅 **7-Day Board View** | See your entire week at a glance with Monday-to-Sunday columns |
+| 🧭 **Week Navigation** | Seamlessly navigate weeks (`◀ Previous` / `Next ▶`) with an instant `Today` jump |
+| 📋 **Copy Week** | Duplicate an entire week's tasks to another week with auto-shifted dates & reset options |
 | ✅ **One-Click Complete** | Satisfying checkbox animations to mark tasks done |
 | 🔗 **Link Attachments** | Attach URLs to any task — no more lost bookmarks |
-| 📎 **File Attachments** | Drag and drop files right onto your tasks |
-| ✏️ **Edit Anything** | Full modal editor to update title, day, notes, links, and files |
-| 📊 **Week Progress** | Live progress percentage across all your tasks |
-| 🧹 **Clear Completed** | One click to sweep away finished tasks |
-| 🔄 **Reset Week** | Fresh start whenever you need one |
-| 💾 **Auto-Save** | Tasks persist in `localStorage` — refresh and they're still there |
-| ⌨️ **Keyboard Friendly** | `Enter` to add, `Escape` to close modals |
+| 📎 **File Attachments** | Attach files to your tasks for the session |
+| ✏️ **Redesigned Edit Modal** | Modern frosted-glass dialog to edit title, day, due date, notes, links, and files |
+| 📊 **Week Progress** | Live progress percentage across all tasks in the viewed week |
+| 🧹 **Clear Completed** | One click to sweep away finished tasks for the week |
+| 🔄 **Reset Week** | Fresh start for the current viewed week whenever needed |
+| 💾 **Auto-Save & Migration** | Tasks persist across weeks in `localStorage` with automatic data migration |
+| ⌨️ **Keyboard Friendly** | `Enter` to add, `Escape` to close any modal |
 
 ---
 
@@ -121,18 +123,23 @@ That's it. No `npm install`, no `pip install`, no `docker compose`. Just **open 
 3. *(Optional)* Add a due date, notes, a link, or file attachments
 4. Hit **"Add to day"** — watch it appear in the board!
 
+**Navigating & Copying Weeks**
+- **🧭 Browse Weeks** → Use `◀ Previous` / `Next ▶` in the board header to view any past or upcoming week
+- **📅 Jump to Today** → Click `Today` to return directly to the current week
+- **📋 Copy Week** → Click `Copy week` in the top bar to duplicate all tasks into next week (with options to reset completion status and shift due dates forward)
+
 **Managing Tasks**
 - **✅ Complete** → Click the checkbox on any task card
-- **✏️ Edit** → Click the **Edit** button to open the detail modal
+- **✏️ Edit** → Click **Edit** to open the redesigned frosted modal to update details
 - **🗑️ Delete** → Click **Delete** on a task card or inside the modal
-- **🧹 Clear completed** → Removes all finished tasks in one sweep
-- **🔄 Reset week** → Nuclear option — starts completely fresh
+- **🧹 Clear completed** → Removes all finished tasks for the viewed week
+- **🔄 Reset week** → Resets all tasks for the current viewed week
 
 **Keyboard Shortcuts**
 | Key | Action |
 |---|---|
 | `Enter` | Submit the task form |
-| `Escape` | Close the edit modal |
+| `Escape` | Close any open modal (Edit or Copy Week) |
 
 ---
 
