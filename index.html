@@ -18,6 +18,13 @@
       <div class="pill" title="Progress across the whole week">
         Week progress: <strong id="weekProgress">0%</strong>
       </div>
+      <button class="btn" id="btnCopyWeek" type="button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+        Copy week
+      </button>
       <button class="btn primary" id="btnClearDone" type="button">Clear completed</button>
       <button class="btn danger" id="btnResetWeek" type="button">Reset week</button>
     </div>
@@ -83,7 +90,7 @@
     <section class="card">
       <div class="hd">
         <div>
-          <h2>This week board</h2>
+          <h2>Week board</h2>
           <div class="sub">
             Week starts Monday. Your board is generated from your local time.
             <span class="kbd" title="Keyboard hint">Enter</span> adds a task when the form is focused.
@@ -92,6 +99,17 @@
         <div class="pill" style="margin-left:auto;" title="Total tasks in the week">
           Tasks: <strong id="taskCount">0</strong>
         </div>
+      </div>
+
+      <div class="weekNav">
+        <button class="weekNavBtn" id="btnPrevWeek" type="button" title="Previous week">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <div class="weekLabel" id="weekLabel">Loading…</div>
+        <button class="weekNavBtn" id="btnNextWeek" type="button" title="Next week">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </button>
+        <button class="weekNavBtn today" id="btnToday" type="button" title="Go to current week">Today</button>
       </div>
 
       <div class="daysGrid" id="daysGrid">
@@ -107,38 +125,61 @@
   <div class="modalBackdrop" id="modalBackdrop" data-open="false">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <div class="mHd">
-        <div>
-          <h3 id="modalTitle">Task details</h3>
-          <p id="modalSubtitle">Edit task info or manage attachments.</p>
+        <div class="mHdText">
+          <div class="mHdBadge">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            <h3 id="modalTitle">Task details</h3>
+          </div>
+          <p id="modalSubtitle">Update title, day, due date, notes, link, and attachments.</p>
         </div>
-        <button class="btn" type="button" id="modalClose">Close</button>
+        <button class="modalCloseBtn" type="button" id="modalClose" aria-label="Close modal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
       </div>
 
       <div class="mBd">
-        <div>
-          <label for="mTitle">Title</label>
-          <input id="mTitle" type="text" />
+        <div class="modalCol">
+          <div class="fieldGroup">
+            <label for="mTitle">Task title</label>
+            <input id="mTitle" type="text" placeholder="e.g. Cisco NetCad practice" />
+          </div>
 
-          <label for="mDay">Day</label>
-          <select id="mDay"></select>
+          <div class="modalGrid2">
+            <div class="fieldGroup">
+              <label for="mDay">Day of week</label>
+              <select id="mDay"></select>
+            </div>
 
-          <label for="mDue">Due date (optional)</label>
-          <input id="mDue" type="date" />
+            <div class="fieldGroup">
+              <label for="mDue">Due date (optional)</label>
+              <input id="mDue" type="date" />
+            </div>
+          </div>
 
-          <label for="mNotes">Notes</label>
-          <textarea id="mNotes"></textarea>
+          <div class="fieldGroup">
+            <label for="mNotes">Notes / steps</label>
+            <textarea id="mNotes" placeholder="Break it down into steps..."></textarea>
+          </div>
         </div>
 
-        <div>
-          <label for="mLink">Link (optional)</label>
-          <input id="mLink" type="url" />
-
-          <div style="margin-top:12px; color:var(--muted); font-size:12px;">
-            Attached files (this session):
+        <div class="modalCol">
+          <div class="fieldGroup">
+            <label for="mLink">Link (optional)</label>
+            <input id="mLink" type="url" placeholder="https://..." />
           </div>
-          <div class="files" id="mFiles" style="margin-top:10px;"></div>
 
-          <div style="margin-top:14px;">
+          <div class="fieldGroup">
+            <label>Attached files (this session)</label>
+            <div class="files modalFilesList" id="mFiles"></div>
+          </div>
+
+          <div class="fieldGroup">
             <label for="mNewFiles">Add more files (optional)</label>
             <input id="mNewFiles" type="file" multiple />
             <div class="hint">New attachments replace none; they'll be appended.</div>
@@ -147,8 +188,91 @@
       </div>
 
       <div class="mFt">
-        <button class="btn danger" type="button" id="modalDelete">Delete task</button>
-        <button class="btn primary" type="button" id="modalSave">Save changes</button>
+        <button class="btn danger" type="button" id="modalDelete">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px; vertical-align:-1px;">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+          Delete task
+        </button>
+        <div class="mFtRight">
+          <button class="btn secondary" type="button" id="modalCancel">Cancel</button>
+          <button class="btn primary" type="button" id="modalSave">Save changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Copy week modal -->
+  <div class="modalBackdrop" id="copyModalBackdrop" data-open="false">
+    <div class="modal copyModal" role="dialog" aria-modal="true" aria-labelledby="copyModalTitle">
+      <div class="mHd">
+        <div class="mHdText">
+          <div class="mHdBadge">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <h3 id="copyModalTitle">Copy week</h3>
+          </div>
+          <p id="copyModalSubtitle">Duplicate all tasks from this week into another week.</p>
+        </div>
+        <button class="modalCloseBtn" type="button" id="copyModalClose" aria-label="Close modal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="mBd" style="grid-template-columns:1fr;">
+        <div class="modalCol" style="gap:20px;">
+          <div class="copySection">
+            <div class="copySectionLabel">Source</div>
+            <div class="copyWeekDisplay" id="copySourceLabel">–</div>
+          </div>
+
+          <div class="copySection">
+            <div class="copySectionLabel">Copy to</div>
+            <div class="copyTargetNav">
+              <button class="weekNavBtn" id="copyTargetPrev" type="button" title="Previous week">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              </button>
+              <div class="copyWeekDisplay" id="copyTargetLabel" style="flex:1;">–</div>
+              <button class="weekNavBtn" id="copyTargetNext" type="button" title="Next week">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="copySection">
+            <div class="copySectionLabel">Tasks to copy</div>
+            <div class="copyPreview" id="copyPreview"></div>
+          </div>
+
+          <div class="copySection">
+            <div class="copySectionLabel">Options</div>
+            <label class="copyOption">
+              <input type="checkbox" id="copyResetStatus" checked />
+              <span>Reset completion status (all tasks start as Open)</span>
+            </label>
+            <label class="copyOption">
+              <input type="checkbox" id="copyShiftDates" checked />
+              <span>Shift due dates forward to match target week</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="mFt" style="justify-content:flex-end;">
+        <button class="btn secondary" type="button" id="copyModalCancel">Cancel</button>
+        <button class="btn primary" type="button" id="copyModalConfirm">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          Copy 0 tasks
+        </button>
       </div>
     </div>
   </div>

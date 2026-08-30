@@ -30,6 +30,14 @@ function formatShortDate(date){
   return date.toLocaleDateString(undefined, { month:"short", day:"numeric" });
 }
 
+function formatWeekRange(mondayDate){
+  const sunday = addDays(mondayDate, 6);
+  const monStr = mondayDate.toLocaleDateString(undefined, { month:"short", day:"numeric" });
+  const sunStr = sunday.toLocaleDateString(undefined, { month:"short", day:"numeric" });
+  const year = sunday.getFullYear();
+  return `${monStr} – ${sunStr}, ${year}`;
+}
+
 function safeURL(url){
   try{
     const u = new URL(url);
@@ -63,6 +71,11 @@ function loadTasks(){
       const parsed = JSON.parse(raw);
       if(Array.isArray(parsed)){
         appState.tasks = parsed;
+        // Migrate old tasks that don't have weekStart
+        const currentKey = toISODateLocal(appState.currentWeekStart);
+        appState.tasks.forEach(t => {
+          if(!t.weekStart) t.weekStart = currentKey;
+        });
       }
     }
   } catch(e) {
@@ -71,11 +84,18 @@ function loadTasks(){
 }
 
 const appState = {
-  weekStart: startOfWeekMonday(),
-  tasks: [] // { id, title, dayIndex(0..6=Mon..Sun), dueDate, notes, link, attachments:[...] , done:boolean, createdAt }
+  currentWeekStart: startOfWeekMonday(),   // the real current week (never changes)
+  viewingWeekStart: startOfWeekMonday(),   // the week being viewed (changes with navigation)
+  tasks: [] // { id, title, dayIndex(0..6=Mon..Sun), weekStart, dueDate, notes, link, attachments:[...] , done:boolean, createdAt }
 };
 
 const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+
+// Helper: get tasks for the currently viewed week
+function tasksForViewedWeek(){
+  const key = toISODateLocal(appState.viewingWeekStart);
+  return appState.tasks.filter(t => t.weekStart === key);
+}
 
 // ---------- Render week & form ----------
 function init(){
@@ -85,6 +105,7 @@ function init(){
   bindEvents();
   updateWeekStats();
   updateWeekProgress();
+  updateWeekLabel();
 }
 
 function buildDaySelect(){
@@ -107,8 +128,6 @@ function buildDaySelect(){
 
   // default: today
   const today = new Date();
-  const msDiff = today - appState.weekStart;
-  const dayIdx = clamp(Math.floor(msDiff / (24*60*60*1000)), 0, 6);
   const computedIdx = (today.getDay() === 0) ? 6 : (today.getDay()-1); // Sun => 6
   $("#taskDay").value = String(computedIdx);
 }
@@ -118,13 +137,15 @@ function renderWeek(){
   const grid = $("#daysGrid");
   grid.innerHTML = "";
 
+  const weekKey = toISODateLocal(appState.viewingWeekStart);
+
   for(let dayIndex=0; dayIndex<7; dayIndex++){
-    const dayDate = addDays(appState.weekStart, dayIndex);
+    const dayDate = addDays(appState.viewingWeekStart, dayIndex);
     const listEl = document.createElement("div");
     listEl.className = "list";
 
     const tasksForDay = appState.tasks
-      .filter(t => t.dayIndex === dayIndex)
+      .filter(t => t.weekStart === weekKey && t.dayIndex === dayIndex)
       .sort((a,b) => b.createdAt - a.createdAt);
 
     for(const t of tasksForDay){
@@ -154,6 +175,7 @@ function renderWeek(){
 
   updateWeekStats();
   updateWeekProgress();
+  updateWeekLabel();
 }
 
 function renderTaskCard(task){
@@ -234,18 +256,47 @@ function renderTaskCard(task){
 }
 
 function updateWeekStats(){
-  $("#taskCount").textContent = String(appState.tasks.length);
-  // Update badges by re-rendering week (already does) -> no extra needed
+  const weekTasks = tasksForViewedWeek();
+  $("#taskCount").textContent = String(weekTasks.length);
 }
 
 function updateWeekProgress(){
-  const total = appState.tasks.length;
-  const done = appState.tasks.filter(t => t.done).length;
+  const weekTasks = tasksForViewedWeek();
+  const total = weekTasks.length;
+  const done = weekTasks.filter(t => t.done).length;
   const pct = total ? Math.round((done/total)*100) : 0;
   $("#weekProgress").textContent = pct + "%";
 }
 
-// ---------- Modal ----------
+function updateWeekLabel(){
+  const label = $("#weekLabel");
+  if(label) label.textContent = formatWeekRange(appState.viewingWeekStart);
+
+  // Highlight "Today" button when NOT on current week
+  const todayBtn = $("#btnToday");
+  if(todayBtn){
+    const isCurrent = toISODateLocal(appState.viewingWeekStart) === toISODateLocal(appState.currentWeekStart);
+    todayBtn.classList.toggle("active", !isCurrent);
+  }
+}
+
+// ---------- Week Navigation ----------
+function goToPrevWeek(){
+  appState.viewingWeekStart = addDays(appState.viewingWeekStart, -7);
+  renderWeek();
+}
+
+function goToNextWeek(){
+  appState.viewingWeekStart = addDays(appState.viewingWeekStart, 7);
+  renderWeek();
+}
+
+function goToToday(){
+  appState.viewingWeekStart = new Date(appState.currentWeekStart);
+  renderWeek();
+}
+
+// ---------- Edit Modal ----------
 let modalTaskId = null;
 
 function openModal(taskId){
@@ -265,13 +316,17 @@ function openModal(taskId){
   // files list
   const filesWrap = $("#mFiles");
   filesWrap.innerHTML = "";
-  (task.attachments || []).forEach(a => {
-    const tag = document.createElement("div");
-    tag.className = "fileTag";
-    tag.title = `${a.type || "file"} • ${a.size ? (a.size + " bytes") : ""}`;
-    tag.innerHTML = `<span>📎</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px;display:inline-block;">${escapeHTML(a.name)}</span>`;
-    filesWrap.appendChild(tag);
-  });
+  if (!task.attachments || task.attachments.length === 0) {
+    filesWrap.innerHTML = `<span class="emptyTag">No files attached for this session</span>`;
+  } else {
+    task.attachments.forEach(a => {
+      const tag = document.createElement("div");
+      tag.className = "fileTag";
+      tag.title = `${a.type || "file"} • ${a.size ? (a.size + " bytes") : ""}`;
+      tag.innerHTML = `<span>📎</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px;display:inline-block;">${escapeHTML(a.name)}</span>`;
+      filesWrap.appendChild(tag);
+    });
+  }
 
   $("#mNewFiles").value = "";
   $("#modalBackdrop").dataset.open = "true";
@@ -294,6 +349,119 @@ function deleteTask(taskId, fromUser){
   appState.tasks = appState.tasks.filter(t => t.id !== taskId);
   renderWeek();
   if(fromUser) closeModal();
+}
+
+// ---------- Copy Week Modal ----------
+let copyTargetWeek = null;
+
+function openCopyModal(){
+  const weekTasks = tasksForViewedWeek();
+
+  if(weekTasks.length === 0){
+    alert("No tasks to copy in this week.");
+    return;
+  }
+
+  // Default target: next week from the viewed week
+  copyTargetWeek = addDays(appState.viewingWeekStart, 7);
+
+  // Set source label
+  $("#copySourceLabel").textContent = formatWeekRange(appState.viewingWeekStart);
+
+  // Reset options
+  $("#copyResetStatus").checked = true;
+  $("#copyShiftDates").checked = true;
+
+  // Update target display and task preview
+  updateCopyTarget();
+
+  $("#copyModalBackdrop").dataset.open = "true";
+}
+
+function closeCopyModal(){
+  copyTargetWeek = null;
+  $("#copyModalBackdrop").dataset.open = "false";
+}
+
+function updateCopyTarget(){
+  $("#copyTargetLabel").textContent = formatWeekRange(copyTargetWeek);
+
+  const weekTasks = tasksForViewedWeek();
+
+  // Build per-day preview
+  const preview = $("#copyPreview");
+  preview.innerHTML = "";
+
+  let totalCount = 0;
+  DAYS.forEach((dayName, idx) => {
+    const dayTasks = weekTasks.filter(t => t.dayIndex === idx);
+    if(dayTasks.length === 0) return;
+    totalCount += dayTasks.length;
+
+    const row = document.createElement("div");
+    row.className = "copyPreviewRow";
+    row.innerHTML = `
+      <span class="copyPreviewDay">${escapeHTML(dayName)}</span>
+      <span class="copyPreviewCount">${dayTasks.length} task${dayTasks.length === 1 ? "" : "s"}</span>
+    `;
+    preview.appendChild(row);
+  });
+
+  // Update confirm button text
+  const btn = $("#copyModalConfirm");
+  btn.innerHTML = `
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;">
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+    </svg>
+    Copy ${totalCount} task${totalCount === 1 ? "" : "s"}
+  `;
+}
+
+function executeCopy(){
+  const sourceKey = toISODateLocal(appState.viewingWeekStart);
+  const targetKey = toISODateLocal(copyTargetWeek);
+  const weekTasks = appState.tasks.filter(t => t.weekStart === sourceKey);
+
+  if(weekTasks.length === 0) return;
+
+  const resetStatus = $("#copyResetStatus").checked;
+  const shiftDates = $("#copyShiftDates").checked;
+
+  // Calculate day difference between source and target weeks
+  const daysDiff = Math.round((copyTargetWeek - appState.viewingWeekStart) / (24*60*60*1000));
+
+  for(const task of weekTasks){
+    const newId = "t_" + Math.random().toString(16).slice(2) + "_" + Date.now();
+
+    let newDueDate = task.dueDate;
+    if(shiftDates && task.dueDate){
+      try {
+        const d = new Date(task.dueDate + "T00:00:00");
+        const shifted = addDays(d, daysDiff);
+        newDueDate = toISODateLocal(shifted);
+      } catch { /* keep original */ }
+    }
+
+    appState.tasks.push({
+      id: newId,
+      title: task.title,
+      dayIndex: task.dayIndex,
+      weekStart: targetKey,
+      dueDate: newDueDate,
+      notes: task.notes || "",
+      link: task.link || "",
+      attachments: (task.attachments || []).map(a => ({...a})), // shallow copy refs
+      done: resetStatus ? false : task.done,
+      createdAt: Date.now()
+    });
+  }
+
+  closeCopyModal();
+
+  // Navigate to the target week to show the copied tasks
+  appState.viewingWeekStart = new Date(copyTargetWeek);
+  renderWeek();
 }
 
 // ---------- Events ----------
@@ -323,6 +491,7 @@ function bindEvents(){
       id,
       title,
       dayIndex,
+      weekStart: toISODateLocal(appState.viewingWeekStart),
       dueDate,
       notes,
       link: linkOk || "",
@@ -351,6 +520,7 @@ function bindEvents(){
       id,
       title: "Sample: weekly practice target",
       dayIndex: computedIdx,
+      weekStart: toISODateLocal(appState.viewingWeekStart),
       dueDate: toISODateLocal(today),
       notes: "1) Review notes\n2) Do 20 minutes practice\n3) Summarize key takeaways",
       link: "https://example.com",
@@ -362,22 +532,28 @@ function bindEvents(){
   });
 
   $("#btnClearDone").addEventListener("click", () => {
-    // remove completed tasks + revoke URLs
-    const doneTasks = appState.tasks.filter(t => t.done);
+    const weekKey = toISODateLocal(appState.viewingWeekStart);
+    // remove completed tasks in viewed week + revoke URLs
+    const doneTasks = appState.tasks.filter(t => t.weekStart === weekKey && t.done);
     doneTasks.forEach(t => (t.attachments || []).forEach(a => { try{ URL.revokeObjectURL(a.url);}catch{}; }));
-    appState.tasks = appState.tasks.filter(t => !t.done);
+    appState.tasks = appState.tasks.filter(t => !(t.weekStart === weekKey && t.done));
     renderWeek();
   });
 
   $("#btnResetWeek").addEventListener("click", () => {
-    if(appState.tasks.length === 0) return;
-    // revoke all
-    appState.tasks.forEach(t => (t.attachments || []).forEach(a => { try{ URL.revokeObjectURL(a.url);}catch{}; }));
-    appState.tasks = [];
+    const weekKey = toISODateLocal(appState.viewingWeekStart);
+    const weekTasks = appState.tasks.filter(t => t.weekStart === weekKey);
+    if(weekTasks.length === 0) return;
+    // revoke URLs for this week only
+    weekTasks.forEach(t => (t.attachments || []).forEach(a => { try{ URL.revokeObjectURL(a.url);}catch{}; }));
+    appState.tasks = appState.tasks.filter(t => t.weekStart !== weekKey);
     renderWeek();
   });
 
+  // Edit modal
   $("#modalClose").addEventListener("click", closeModal);
+  const modalCancelBtn = $("#modalCancel");
+  if(modalCancelBtn) modalCancelBtn.addEventListener("click", closeModal);
   $("#modalBackdrop").addEventListener("click", (e) => {
     if(e.target === $("#modalBackdrop")) closeModal();
   });
@@ -417,10 +593,33 @@ function bindEvents(){
     closeModal();
   });
 
-  // optional: allow ESC to close modal
+  // Week navigation
+  $("#btnPrevWeek").addEventListener("click", goToPrevWeek);
+  $("#btnNextWeek").addEventListener("click", goToNextWeek);
+  $("#btnToday").addEventListener("click", goToToday);
+
+  // Copy week modal
+  $("#btnCopyWeek").addEventListener("click", openCopyModal);
+  $("#copyModalClose").addEventListener("click", closeCopyModal);
+  $("#copyModalCancel").addEventListener("click", closeCopyModal);
+  $("#copyModalBackdrop").addEventListener("click", (e) => {
+    if(e.target === $("#copyModalBackdrop")) closeCopyModal();
+  });
+  $("#copyTargetPrev").addEventListener("click", () => {
+    copyTargetWeek = addDays(copyTargetWeek, -7);
+    updateCopyTarget();
+  });
+  $("#copyTargetNext").addEventListener("click", () => {
+    copyTargetWeek = addDays(copyTargetWeek, 7);
+    updateCopyTarget();
+  });
+  $("#copyModalConfirm").addEventListener("click", executeCopy);
+
+  // ESC to close any open modal
   document.addEventListener("keydown", (e) => {
-    if(e.key === "Escape" && $("#modalBackdrop").dataset.open === "true"){
-      closeModal();
+    if(e.key === "Escape"){
+      if($("#copyModalBackdrop").dataset.open === "true") closeCopyModal();
+      if($("#modalBackdrop").dataset.open === "true") closeModal();
     }
   });
 }
